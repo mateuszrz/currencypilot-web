@@ -1,0 +1,47 @@
+name: Odswiez kursy
+
+# NBP publikuje tabele A w dni robocze okolo 12:15 czasu polskiego.
+# Cron chodzi w UTC, a Polska zmienia czas dwa razy w roku, wiec zamiast
+# kombinowac z przesunieciem uruchamiamy sie dwa razy: 11:00 i 13:00 UTC.
+# To pokrywa 12:15 zarowno zima (CET), jak i latem (CEST). Drugi przebieg
+# nic nie zepsuje — gdy tabela sie nie zmienila, nie ma czego commitowac.
+on:
+  schedule:
+    - cron: "0 11 * * 1-5"
+    - cron: "0 13 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kursy
+  cancel-in-progress: false
+
+jobs:
+  odswiez:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Wygeneruj strony kursow
+        run: python tools/generate_currency_pages.py
+
+      - name: Zacommituj, jesli kursy sie zmienily
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "Tabela bez zmian — nie ma czego publikowac."
+            exit 0
+          fi
+
+          TABELA=$(grep -oP 'tabela \K[0-9]+/A/NBP/[0-9]+' kursy-walut/index.html | head -1)
+          git add -A
+          git commit -m "Kursy: tabela ${TABELA}"
+          git push

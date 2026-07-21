@@ -7,21 +7,43 @@ Czysty statyczny HTML — bez builda, bez zależności, bez JavaScriptu. Otwórz
 `index.html` w przeglądarce, żeby zobaczyć zmiany lokalnie.
 
 ```
-index.html                 # strona główna
-privacy/index.html         # polityka prywatności → /privacy
-shots/*.webp               # zrzuty aplikacji (tools/prepare_shots.py)
-favicon.svg                # ikona (te same strzałki, co ikona aplikacji)
-og.png                     # obrazek do podglądu w social media (1024×500)
-vercel.json                # czyste adresy URL + nagłówki bezpieczeństwa
+index.html                   # strona główna
+privacy/index.html           # polityka prywatności → /privacy
+kurs-euro/, kurs-dolara/…    # 32 strony kursów (generowane)
+kursy-walut/                 # spis wszystkich walut (generowany)
+shots/*.webp                 # zrzuty aplikacji (tools/prepare_shots.py)
+favicon.svg                  # ikona (te same strzałki, co ikona aplikacji)
+og.png                       # obrazek do podglądu w social media
+vercel.json                  # nagłówki + przekierowania (generowane)
 .well-known/assetlinks.json  # weryfikacja App Links dla aplikacji
+tools/currencies.py          # słowniki: adresy, odmiana, opisy walut
 ```
 
-## App Links (`/kurs/<kod>`)
+## Strony kursów
 
-Aplikacja przechwytuje adresy `https://currencypilot.io/kurs/eur` i otwiera
-na nich ekran waluty. Żeby Android otwierał je bez pytania użytkownika, musi
-znaleźć pod `/.well-known/assetlinks.json` odcisk certyfikatu, którym
-aplikacja jest podpisana.
+`python tools/generate_currency_pages.py` pobiera tabelę A z NBP i buduje
+stronę dla każdej waluty: aktualny kurs, wykres, tabelę ostatnich notowań,
+gotowe przeliczenia i dane strukturalne schema.org. Wszystko w HTML-u, bez
+JavaScriptu — wyszukiwarka widzi te same liczby co człowiek.
+
+**Strony przebudowują się codziennie** (`.github/workflows/kursy.yml`,
+11:00 i 13:00 UTC w dni robocze — dwie godziny, bo Polska zmienia czas,
+a tabela wychodzi ok. 12:15). Gdy tabela się nie zmieniła, workflow nie
+robi commita.
+
+Adresy są frazami, których ludzie szukają (`/kurs-korony-czeskiej/`),
+a nie kodami ISO. Mapowanie kod → adres siedzi w `tools/currencies.py`
+i **musi zgadzać się ze słownikiem `slugs` w `lib/services/deep_links.dart`
+w repozytorium aplikacji** — inaczej linki z aplikacji trafią w pustkę.
+Przekierowania ze starych adresów `/kurs/<kod>` generują się do
+`vercel.json` z tego samego słownika.
+
+## App Links
+
+Aplikacja przechwytuje adresy stron kursów i otwiera na nich ekran waluty.
+Żeby Android robił to bez pytania użytkownika, musi znaleźć pod
+`/.well-known/assetlinks.json` odcisk certyfikatu, którym aplikacja jest
+podpisana.
 
 **Po pierwszym wydaniu w Google Play trzeba dopisać tam drugi odcisk.**
 Play App Signing podpisuje wydawaną aplikację własnym kluczem Google, innym

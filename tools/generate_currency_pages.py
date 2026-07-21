@@ -1,176 +1,282 @@
-"""Generuje podstrony /kurs/<kod> dla walut z tabeli A NBP.
+"""Generuje strony kursow: /kurs-euro/, /kurs-dolara/ i tak dalej.
 
-Kazda podstrona jest celem App Linka z aplikacji (`/kurs/eur`), a dla kogos
-bez aplikacji — zwyczajna strona zamiast bledu 404.
+Kazda strona pokazuje aktualny kurs sredni NBP, tabele ostatnich notowan,
+gotowe przeliczenia popularnych kwot i wykres. Wszystko jest w HTML-u —
+bez JavaScriptu — zeby wyszukiwarka widziala te same liczby co czlowiek.
 
-Czego tu swiadomie NIE MA: liczbowych kursow. Strona jest statyczna, a kurs
-zmienia sie codziennie — opublikowana liczba po tygodniu bylaby po prostu
-nieprawdziwa. Kurs pokazuje aplikacja, ktora pobiera go na biezaco.
-
-Waluty z realnym wolumenem wyszukiwan dostaja wlasny akapit (NOTES ponizej).
-Reszta krotszy wariant — 32 strony roznice sie tylko nazwa waluty to dla
-wyszukiwarek strony przelotowe, a takie zestawy potrafia zaszkodzic calej
-domenie.
+Kurs na stronie statycznej starzeje sie, wiec strony przebudowuje codziennie
+GitHub Actions (.github/workflows/kursy.yml) po publikacji tabeli NBP.
+Data i numer tabeli sa widoczne na stronie, zeby nikt nie musial zgadywac,
+z kiedy jest liczba.
 
 Uruchomienie:  python tools/generate_currency_pages.py
-Wymaga:        dostepu do api.nbp.pl (tylko lista walut, bez kursow)
+Wymaga:        dostepu do api.nbp.pl
 """
 
 import html
 import json
-import re
+import urllib.error
 import urllib.request
+from datetime import date, datetime
 from pathlib import Path
 
-TABLE_URL = "https://api.nbp.pl/api/exchangerates/tables/A?format=json"
+from currencies import COUNTRY, CURRENCIES, NOTES
 
+API = "https://api.nbp.pl/api/exchangerates"
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "kurs"
 
-# Dopelniacz kazdej nazwy — "kurs korony czeskiej", nie "kurs korona czeska".
-# Slownik, a nie reguly: polska fleksja ma za duzo wyjatkow, zeby zgadywac
-# ("korona czeska" → "czesky" przy naiwnym obcinaniu koncowki).
-# Frazy w dopelniaczu sa tez tym, czego ludzie faktycznie szukaja.
-GENITIVE = {
-    "THB": "bata",
-    "USD": "dolara amerykańskiego",
-    "AUD": "dolara australijskiego",
-    "HKD": "dolara Hongkongu",
-    "CAD": "dolara kanadyjskiego",
-    "NZD": "dolara nowozelandzkiego",
-    "SGD": "dolara singapurskiego",
-    "EUR": "euro",
-    "HUF": "forinta",
-    "CHF": "franka szwajcarskiego",
-    "GBP": "funta szterlinga",
-    "UAH": "hrywny",
-    "JPY": "jena",
-    "CZK": "korony czeskiej",
-    "DKK": "korony duńskiej",
-    "ISK": "korony islandzkiej",
-    "NOK": "korony norweskiej",
-    "SEK": "korony szwedzkiej",
-    "RON": "leja rumuńskiego",
-    "TRY": "liry tureckiej",
-    "ILS": "nowego izraelskiego szekla",
-    "CLP": "peso chilijskiego",
-    "PHP": "peso filipińskiego",
-    "MXN": "peso meksykańskiego",
-    "ZAR": "randa",
-    "BRL": "reala",
-    "MYR": "ringgita",
-    "IDR": "rupii indonezyjskiej",
-    "INR": "rupii indyjskiej",
-    "KRW": "wona południowokoreańskiego",
-    "CNY": "yuana renminbi",
-    "XDR": "SDR",
-}
+# Ile notowan pokazujemy w tabeli i na wykresie.
+HISTORY_DAYS = 30
+TABLE_ROWS = 10
 
-# Waluty, ktorych Polacy realnie szukaja — kazda z wlasnym akapitem.
-# Tresc ma byc prawdziwa i konkretna, inaczej nie ma po co jej pisac.
-NOTES = {
-    "EUR": "Euro jest walutą dwudziestu krajów strefy euro, w tym Niemiec, "
-           "Francji, Włoch i Słowacji. To najczęściej przeliczana waluta "
-           "w Polsce — od zakupów w sklepach internetowych po rozliczanie "
-           "wyjazdów służbowych.",
-    "USD": "Dolar amerykański jest walutą Stanów Zjednoczonych i podstawową "
-           "walutą rozliczeniową w handlu międzynarodowym. W dolarach "
-           "notowane są między innymi surowce i większość usług chmurowych.",
-    "GBP": "Funt szterling jest walutą Wielkiej Brytanii. Przydaje się przy "
-           "zakupach w brytyjskich sklepach i przy rozliczaniu pracy dla "
-           "tamtejszych firm.",
-    "CHF": "Frank szwajcarski jest walutą Szwajcarii i Liechtensteinu. "
-           "W Polsce śledzony głównie przez osoby spłacające kredyty "
-           "indeksowane do tej waluty.",
-    "CZK": "Korona czeska jest walutą Czech — jedna z najczęściej "
-           "przeliczanych walut przy wyjazdach weekendowych.",
-    "NOK": "Korona norweska jest walutą Norwegii. Często przeliczana przez "
-           "osoby pracujące w Skandynawii.",
-    "SEK": "Korona szwedzka jest walutą Szwecji.",
-    "DKK": "Korona duńska jest walutą Danii.",
-    "JPY": "Jen jest walutą Japonii. NBP podaje jego kurs za sto jenów, "
-           "co łatwo przeoczyć przy ręcznym przeliczaniu.",
-    "CAD": "Dolar kanadyjski jest walutą Kanady.",
-    "AUD": "Dolar australijski jest walutą Australii.",
-    "HUF": "Forint jest walutą Węgier. NBP podaje jego kurs za sto forintów.",
-    "UAH": "Hrywna jest walutą Ukrainy.",
-    "TRY": "Lira turecka jest walutą Turcji.",
-}
+# Kwoty w gotowych przeliczeniach — to frazy z dlugiego ogona
+# ("100 euro ile to zlotych").
+AMOUNTS = [1, 10, 50, 100, 500, 1000]
+
+
+def fetch(url):
+    with urllib.request.urlopen(url, timeout=30) as response:
+        return json.load(response)
+
+
+def fetch_table():
+    return fetch(f"{API}/tables/A?format=json")[0]
+
+
+def fetch_series(code, days=HISTORY_DAYS):
+    """Ostatnie notowania waluty. 404 znaczy brak notowan, nie awarie."""
+    try:
+        data = fetch(f"{API}/rates/a/{code}/last/{days}/?format=json")
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return []
+        raise
+    return [(r["effectiveDate"], r["mid"]) for r in data["rates"]]
+
+
+def pl_number(value, places=4):
+    """Liczba po polsku: przecinek dziesietny, spacja co tysiac."""
+    text = f"{value:,.{places}f}"
+    return text.replace(",", " ").replace(".", ",")
+
+
+def pl_date(iso):
+    return datetime.strptime(iso, "%Y-%m-%d").strftime("%d.%m.%Y")
+
+
+def sparkline(points, width=680, height=160):
+    """Wykres jako inline SVG — bez bibliotek i bez zapytan do sieci."""
+    if len(points) < 2:
+        return ""
+
+    values = [v for _, v in points]
+    low, high = min(values), max(values)
+    span = high - low or 1
+
+    step = width / (len(points) - 1)
+    coords = [
+        (i * step, height - (v - low) / span * (height - 20) - 10)
+        for i, (_, v) in enumerate(points)
+    ]
+    line = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+    area = f"0,{height} " + line + f" {width},{height}"
+
+    return (
+        f'<svg class="chart" viewBox="0 0 {width} {height}" '
+        f'preserveAspectRatio="none" role="img" '
+        f'aria-label="Wykres kursu z ostatnich {len(points)} notowań">'
+        f'<polygon points="{area}" fill="var(--fill)"/>'
+        f'<polyline points="{line}" fill="none" stroke="var(--brand)" '
+        f'stroke-width="2.5" stroke-linejoin="round"/>'
+        f"</svg>"
+    )
+
+
+def build_page(code, rate, series, table_meta):
+    slug, gen, nominative = CURRENCIES[code]
+    country = COUNTRY.get(code, "")
+    note = NOTES.get(code)
+
+    mid = rate["mid"]
+    number = table_meta["no"]
+    effective = table_meta["effectiveDate"]
+
+    # Zmiana wzgledem pierwszego notowania w okresie — konkret, ktory
+    # odroznia dzisiejsza wersje strony od wczorajszej.
+    change_html = ""
+    if len(series) >= 2:
+        first = series[0][1]
+        if first:
+            pct = (mid - first) / first * 100
+            arrow = "wzrost" if pct >= 0 else "spadek"
+            change_html = (
+                f"<p>W ciągu ostatnich {len(series)} notowań kurs "
+                f"{gen} zanotował {arrow} o "
+                f"<strong>{pl_number(abs(pct), 2)}%</strong> — z "
+                f"{pl_number(first)} do {pl_number(mid)} zł.</p>"
+            )
+
+    rows = "\n".join(
+        f"<tr><td>{pl_date(day)}</td><td>{pl_number(value)} zł</td></tr>"
+        for day, value in reversed(series[-TABLE_ROWS:])
+    )
+
+    conversions = "\n".join(
+        f"<tr><td>{pl_number(amount, 0)} {code}</td>"
+        f"<td>{pl_number(amount * mid, 2)} zł</td></tr>"
+        for amount in AMOUNTS
+    )
+
+    # Dane strukturalne — pomagaja wyszukiwarce zrozumiec, ze to kurs waluty.
+    structured = json.dumps(
+        {
+            "@context": "https://schema.org",
+            "@type": "ExchangeRateSpecification",
+            "currency": code,
+            "currentExchangeRate": {
+                "@type": "UnitPriceSpecification",
+                "price": round(mid, 4),
+                "priceCurrency": "PLN",
+            },
+            "url": f"https://currencypilot.io/{slug}/",
+        },
+        ensure_ascii=False,
+    )
+
+    return PAGE.format(
+        code=html.escape(code),
+        slug=slug,
+        gen=html.escape(gen),
+        nominative=html.escape(nominative),
+        country=html.escape(country),
+        note=html.escape(note) if note else "",
+        note_block=f"<p>{html.escape(note)}</p>" if note else "",
+        mid=pl_number(mid),
+        effective=pl_date(effective),
+        table_no=html.escape(number),
+        change=change_html,
+        rows=rows,
+        conversions=conversions,
+        chart=sparkline(series),
+        structured=structured,
+        history_count=len(series),
+    )
+
 
 PAGE = """<!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kurs {gen_title} ({code}) — CurrencyPilot</title>
-<meta name="description" content="{meta}">
+<title>Kurs {gen} ({code}) — {mid} zł · CurrencyPilot</title>
+<meta name="description" content="Kurs {gen} ({code}) z dnia {effective}: 1 {code} = {mid} zł. Kurs średni NBP, tabela {table_no}, historia notowań i przelicznik.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="canonical" href="https://currencypilot.io/kurs/{slug}">
+<link rel="canonical" href="https://currencypilot.io/{slug}/">
+<script type="application/ld+json">{structured}</script>
 <style>
-  :root {{ color-scheme: light dark; --brand:#0a6fe8; --ink:#0d1117;
-           --soft:#4a5568; --bg:#fff; --tint:#f2f6fc; --line:#dfe6f0; }}
+  :root {{ color-scheme: light dark; --brand:#0a6fe8; --fill:rgba(10,111,232,.12);
+           --ink:#0d1117; --soft:#4a5568; --bg:#fff; --tint:#f2f6fc; --line:#dfe6f0; }}
   @media (prefers-color-scheme: dark) {{
-    :root {{ --brand:#4d9dff; --ink:#e8ecf2; --soft:#9aa6b8; --bg:#0c0f14;
-             --tint:#12171f; --line:#232b36; }}
+    :root {{ --brand:#4d9dff; --fill:rgba(77,157,255,.16); --ink:#e8ecf2;
+             --soft:#9aa6b8; --bg:#0c0f14; --tint:#12171f; --line:#232b36; }}
   }}
-  * {{ box-sizing: border-box; }}
-  body {{ margin:0 auto; padding:2rem 1.5rem 4rem; max-width:44rem;
+  * {{ box-sizing:border-box; }}
+  body {{ margin:0 auto; padding:2rem 1.5rem 4rem; max-width:46rem;
          background:var(--bg); color:var(--ink);
          font:1rem/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }}
-  a {{ color: var(--brand); }}
-  .back {{ font-size:.9rem; margin:0 0 2rem; }}
+  a {{ color:var(--brand); }}
+  .back {{ font-size:.9rem; margin:0 0 1.5rem; }}
   .back a {{ text-decoration:none; }}
-  h1 {{ font-size:clamp(1.7rem,4vw,2.3rem); line-height:1.15;
-       letter-spacing:-.03em; margin:0 0 .5rem; }}
-  .code {{ color:var(--soft); margin:0 0 1.75rem; }}
-  h2 {{ font-size:1.15rem; margin:2.25rem 0 .6rem; letter-spacing:-.015em; }}
+  h1 {{ font-size:clamp(1.6rem,4vw,2.2rem); line-height:1.15;
+       letter-spacing:-.03em; margin:0 0 1.25rem; }}
+  .now {{ background:var(--tint); border:1px solid var(--line);
+         border-radius:1rem; padding:1.5rem; margin:0 0 1.5rem; }}
+  .rate {{ font-size:clamp(2rem,6vw,2.8rem); font-weight:700;
+          letter-spacing:-.03em; line-height:1.1; }}
+  .meta {{ color:var(--soft); font-size:.9rem; margin:.5rem 0 0; }}
+  .chart {{ width:100%; height:auto; display:block; margin:1.25rem 0 0;
+           border-radius:.5rem; }}
+  h2 {{ font-size:1.2rem; margin:2.5rem 0 .75rem; letter-spacing:-.02em; }}
   p {{ margin:0 0 1rem; }}
-  .card {{ background:var(--tint); border:1px solid var(--line);
-          border-radius:1rem; padding:1.5rem; margin:2rem 0; }}
-  .card p:last-child {{ margin-bottom:0; }}
-  ul {{ padding-left:1.15rem; color:var(--soft); }}
-  li {{ margin:.35rem 0; }}
+  table {{ width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }}
+  th, td {{ text-align:left; padding:.6rem .75rem; border-bottom:1px solid var(--line); }}
+  th {{ color:var(--soft); font-weight:600; font-size:.85rem;
+       text-transform:uppercase; letter-spacing:.05em; }}
+  td:last-child, th:last-child {{ text-align:right; }}
+  .cta {{ background:var(--tint); border:1px solid var(--line);
+         border-radius:1rem; padding:1.5rem; margin:2.5rem 0 0; }}
+  .cta p:last-child {{ margin-bottom:0; }}
   footer {{ margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--line);
-           color:var(--soft); font-size:.9rem; }}
+           color:var(--soft); font-size:.85rem; }}
 </style>
 </head>
 <body>
 
-<p class="back"><a href="/">← CurrencyPilot</a></p>
+<p class="back"><a href="/">← CurrencyPilot</a> · <a href="/kursy-walut/">wszystkie waluty</a></p>
 
-<h1>Kurs {gen_title}</h1>
-<p class="code">{name} · {code} · kurs średni, tabela A</p>
+<h1>Kurs {gen} ({code})</h1>
 
-<p>{note}</p>
+<div class="now">
+  <div class="rate">1 {code} = {mid} zł</div>
+  <p class="meta">Kurs średni NBP · tabela {table_no} · {effective}</p>
+  {chart}
+</div>
 
-<div class="card">
+{change}
+{note_block}
+<p>
+  {nominative} to waluta, której obszarem obowiązywania jest {country}.
+  Kurs średni publikuje Narodowy Bank Polski w tabeli A — w dni robocze
+  około godziny 12:15.
+</p>
+
+<h2>Ile to złotych</h2>
+<table>
+  <thead><tr><th>Kwota</th><th>Wartość w złotych</th></tr></thead>
+  <tbody>
+{conversions}
+  </tbody>
+</table>
+<p class="meta">Przeliczenia po kursie średnim z {effective}.</p>
+
+<h2>Ostatnie notowania</h2>
+<table>
+  <thead><tr><th>Data</th><th>Kurs średni</th></tr></thead>
+  <tbody>
+{rows}
+  </tbody>
+</table>
+
+<div class="cta">
   <p>
-    <strong>Aktualnego kursu nie znajdziesz na tej stronie</strong> — i to
-    celowo. Strona jest statyczna, a kurs zmienia się każdego dnia roboczego,
-    więc opublikowana tu liczba szybko przestałaby być prawdziwa.
+    <strong>Kurs zmienia się codziennie.</strong> Ta strona pokazuje notowanie
+    z {effective} i jest odświeżana każdego dnia roboczego po publikacji
+    tabeli NBP.
   </p>
   <p>
-    Kurs pokazuje aplikacja <strong>Konwerter walut</strong>: pobiera go na
-    bieżąco, oznacza numerem tabeli i datą publikacji, a obok rysuje wykres
-    za miesiąc, kwartał albo rok.
+    Jeśli chcesz mieć aktualny kurs pod ręką razem z kalkulatorem i wykresem —
+    <a href="/">zobacz aplikację Konwerter walut</a>. Działa też bez internetu,
+    na ostatnio pobranych danych.
   </p>
 </div>
 
-<h2>Co daje aplikacja</h2>
-<ul>
-  <li>przeliczanie {gen} na złote i odwrotnie, z kalkulatorem w środku,</li>
-  <li>historię notowań na wykresie — miesiąc, kwartał, rok,</li>
-  <li>działanie bez internetu na ostatnio pobranych danych,</li>
-  <li>brak reklam, kont i śledzenia.</li>
-</ul>
-
-<p style="margin-top:2rem">
-  <a href="/">Zobacz, jak działa aplikacja →</a>
+<h2>Częste pytania</h2>
+<p>
+  <strong>Czy to kurs, po którym kupię {gen} w kantorze?</strong><br>
+  Nie. Kurs średni NBP jest kursem referencyjnym — używa się go w księgowości
+  i rozliczeniach podatkowych. Kantory i banki doliczają własną marżę, więc
+  kupno wypada drożej, a sprzedaż taniej.
+</p>
+<p>
+  <strong>Kiedy pojawia się nowy kurs?</strong><br>
+  NBP publikuje tabelę A w dni robocze około 12:15. W weekendy i święta
+  obowiązuje ostatnia opublikowana tabela.
 </p>
 
 <footer>
-  CurrencyPilot · aplikacja informacyjna. Nie świadczy usług wymiany walut
-  ani doradztwa finansowego. Kursy mają charakter referencyjny.
+  Dane: Narodowy Bank Polski, tabela A (kursy średnie). CurrencyPilot nie jest
+  powiązany z NBP. Kursy mają charakter informacyjny — nie stanowią oferty
+  ani doradztwa finansowego.
 </footer>
 
 </body>
@@ -183,56 +289,53 @@ INDEX = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kursy walut — CurrencyPilot</title>
-<meta name="description" content="Waluty, których kurs średni publikuje NBP w tabeli A. Aktualny kurs i historię notowań pokazuje aplikacja Konwerter walut.">
+<title>Kursy walut NBP — tabela z {effective} · CurrencyPilot</title>
+<meta name="description" content="Kursy średnie NBP z {effective}, tabela {table_no}. Wszystkie waluty tabeli A wraz z historią notowań.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="canonical" href="https://currencypilot.io/kurs">
+<link rel="canonical" href="https://currencypilot.io/kursy-walut/">
 <style>
   :root {{ color-scheme: light dark; --brand:#0a6fe8; --ink:#0d1117;
-           --soft:#4a5568; --bg:#fff; --line:#dfe6f0; }}
+           --soft:#4a5568; --bg:#fff; --tint:#f2f6fc; --line:#dfe6f0; }}
   @media (prefers-color-scheme: dark) {{
     :root {{ --brand:#4d9dff; --ink:#e8ecf2; --soft:#9aa6b8; --bg:#0c0f14;
-             --line:#232b36; }}
+             --tint:#12171f; --line:#232b36; }}
   }}
-  * {{ box-sizing: border-box; }}
-  body {{ margin:0 auto; padding:2rem 1.5rem 4rem; max-width:48rem;
+  * {{ box-sizing:border-box; }}
+  body {{ margin:0 auto; padding:2rem 1.5rem 4rem; max-width:46rem;
          background:var(--bg); color:var(--ink);
          font:1rem/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }}
-  a {{ color: var(--brand); }}
-  .back {{ font-size:.9rem; margin:0 0 2rem; }}
-  .back a {{ text-decoration:none; }}
-  h1 {{ font-size:clamp(1.7rem,4vw,2.3rem); letter-spacing:-.03em; margin:0 0 .5rem; }}
-  .lead {{ color:var(--soft); margin:0 0 2rem; max-width:36rem; }}
-  ul {{ list-style:none; padding:0; margin:0;
-       display:grid; grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));
-       gap:1px; background:var(--line); border:1px solid var(--line);
-       border-radius:.75rem; overflow:hidden; }}
-  li {{ background:var(--bg); }}
-  li a {{ display:flex; justify-content:space-between; gap:1rem;
-         padding:.85rem 1rem; text-decoration:none; color:var(--ink); }}
-  li a:hover {{ background:var(--line); }}
-  .kod {{ color:var(--soft); font-variant-numeric:tabular-nums; }}
+  a {{ color:var(--brand); }}
+  .back {{ font-size:.9rem; margin:0 0 1.5rem; }} .back a {{ text-decoration:none; }}
+  h1 {{ font-size:clamp(1.6rem,4vw,2.2rem); letter-spacing:-.03em; margin:0 0 .4rem; }}
+  .meta {{ color:var(--soft); margin:0 0 2rem; }}
+  table {{ width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }}
+  th, td {{ text-align:left; padding:.6rem .5rem; border-bottom:1px solid var(--line); }}
+  th {{ color:var(--soft); font-weight:600; font-size:.85rem;
+       text-transform:uppercase; letter-spacing:.05em; }}
+  td:last-child, th:last-child {{ text-align:right; }}
+  td a {{ text-decoration:none; }}
+  .kod {{ color:var(--soft); font-size:.85rem; }}
   footer {{ margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--line);
-           color:var(--soft); font-size:.9rem; }}
+           color:var(--soft); font-size:.85rem; }}
 </style>
 </head>
 <body>
 
 <p class="back"><a href="/">← CurrencyPilot</a></p>
 
-<h1>Kursy walut</h1>
-<p class="lead">
-  Waluty, których kurs średni publikuje NBP w tabeli A. Aktualny kurs
-  i historię notowań pokazuje aplikacja — te strony tylko ją opisują.
-</p>
+<h1>Kursy walut NBP</h1>
+<p class="meta">Tabela {table_no} · {effective} · kursy średnie</p>
 
-<ul>
-{items}
-</ul>
+<table>
+  <thead><tr><th>Waluta</th><th>Kurs średni</th></tr></thead>
+  <tbody>
+{rows}
+  </tbody>
+</table>
 
 <footer>
-  CurrencyPilot · aplikacja informacyjna. Nie świadczy usług wymiany walut
-  ani doradztwa finansowego.
+  Dane: Narodowy Bank Polski, tabela A. Strona odświeżana codziennie po
+  publikacji tabeli. CurrencyPilot nie jest powiązany z NBP.
 </footer>
 
 </body>
@@ -240,88 +343,77 @@ INDEX = """<!DOCTYPE html>
 """
 
 
-def fetch_currencies():
-    with urllib.request.urlopen(TABLE_URL, timeout=20) as response:
-        table = json.load(response)[0]
-    return [(r["code"], r["currency"]) for r in table["rates"]]
+def write_redirects():
+    """Stare adresy /kurs/<kod> kieruja na nowe, frazowe.
 
-
-def write_index(entries):
-    """Spis wszystkich walut — bez niego podstrony sa sierotami.
-
-    Strona, do ktorej nic nie linkuje, jest dla wyszukiwarki niewidoczna,
-    a dla czlowieka nieosiagalna inaczej niz przez zgadniecie adresu.
+    Aplikacja wypuszczona przed ta zmiana nadal buduje linki w starym
+    formacie, a i tak juz ktos moze je miec zapisane. Redirect trzymamy
+    w vercel.json obok reszty konfiguracji, ale wpisujemy go stad, zeby
+    nie rozjechal sie ze slownikiem walut.
     """
-    items = "\n".join(
-        f'  <li><a href="/kurs/{code.lower()}">'
-        f'<span>{html.escape(clean)}</span>'
-        f'<span class="kod">{html.escape(code)}</span></a></li>'
-        for code, clean in entries
+    config_path = ROOT / "vercel.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+
+    config["redirects"] = [
+        {
+            "source": f"/kurs/{code.lower()}",
+            "destination": f"/{slug}/",
+            "permanent": True,
+        }
+        for code, (slug, _, _) in CURRENCIES.items()
+    ] + [
+        {"source": "/kurs", "destination": "/kursy-walut/", "permanent": True},
+    ]
+
+    config_path.write_text(
+        json.dumps(config, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
     )
-    (OUT / "index.html").write_text(INDEX.format(items=items), encoding="utf-8")
+    return len(config["redirects"])
 
 
 def main():
-    currencies = fetch_currencies()
-    OUT.mkdir(parents=True, exist_ok=True)
+    table = fetch_table()
+    rates = {r["code"]: r for r in table["rates"]}
+    meta = {"no": table["no"], "effectiveDate": table["effectiveDate"]}
 
-    detailed = 0
-    missing = []
-    entries = []
+    written = 0
+    index_rows = []
 
-    for code, name in currencies:
-        # NBP dopisuje kraj w nawiasie ("jen (Japonia)") — w zdaniu zawadza,
-        # wiec pokazujemy go osobno, w linijce pod naglowkiem.
-        clean = re.sub(r"\s*\(.*?\)", "", name).strip()
+    for code, (slug, gen, nominative) in CURRENCIES.items():
+        rate = rates.get(code)
+        if rate is None:
+            print(f"  pominieto {code} — nie ma go w dzisiejszej tabeli")
+            continue
 
-        gen = GENITIVE.get(code)
-        if gen is None:
-            # Nowa waluta w tabeli: nie zgadujemy odmiany, tylko piszemy
-            # zdanie, ktore jej nie potrzebuje.
-            missing.append(f"{code} ({name})")
-            gen = f"waluty {code}"
-            gen_title = f"{clean} ({code})"
-        else:
-            gen_title = gen
+        series = fetch_series(code)
+        page = build_page(code, rate, series, meta)
 
-        note = NOTES.get(code)
-        if note:
-            detailed += 1
-        else:
-            note = (
-                f"{clean.capitalize()} ({code}) jest jedną z walut, których "
-                f"kurs średni publikuje Narodowy Bank Polski w tabeli A."
-            )
-
-        page = PAGE.format(
-            code=html.escape(code),
-            slug=code.lower(),
-            name=html.escape(name),
-            gen=html.escape(gen),
-            gen_title=html.escape(gen_title),
-            note=html.escape(note),
-            meta=html.escape(
-                f"Kurs {gen} ({code}) — sprawdź aktualny kurs średni "
-                f"i historię notowań w aplikacji Konwerter walut."
-            ),
-        )
-
-        directory = OUT / code.lower()
+        directory = ROOT / slug
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "index.html").write_text(page, encoding="utf-8")
+        written += 1
 
-        entries.append((code, clean))
+        index_rows.append(
+            (nominative, f'<tr><td><a href="/{slug}/">{html.escape(nominative)}</a>'
+                         f' <span class="kod">{code}</span></td>'
+                         f'<td>{pl_number(rate["mid"])} zł</td></tr>')
+        )
 
-    write_index(sorted(entries, key=lambda e: e[1]))
+    index = INDEX.format(
+        effective=pl_date(meta["effectiveDate"]),
+        table_no=html.escape(meta["no"]),
+        rows="\n".join(row for _, row in sorted(index_rows)),
+    )
+    directory = ROOT / "kursy-walut"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "index.html").write_text(index, encoding="utf-8")
 
-    print(f"  wygenerowano {len(currencies)} stron w {OUT.relative_to(ROOT)}/")
-    print(f"  plus spis /kurs")
-    print(f"  w tym {detailed} z wlasnym opisem, "
-          f"{len(currencies) - detailed} z ogolnym")
-    if missing:
-        print("  UWAGA — brak odmiany w GENITIVE, dopisz recznie:")
-        for item in missing:
-            print(f"    {item}")
+    redirects = write_redirects()
+
+    print(f"  tabela {meta['no']} z {pl_date(meta['effectiveDate'])}")
+    print(f"  wygenerowano {written} stron walut + spis /kursy-walut")
+    print(f"  przekierowan ze starych adresow: {redirects}")
 
 
 if __name__ == "__main__":
