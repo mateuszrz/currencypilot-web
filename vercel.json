@@ -24,167 +24,167 @@
   "redirects": [
     {
       "source": "/kurs/eur",
-      "destination": "/kurs-euro/",
+      "destination": "/kurs-euro",
       "permanent": true
     },
     {
       "source": "/kurs/usd",
-      "destination": "/kurs-dolara/",
+      "destination": "/kurs-dolara",
       "permanent": true
     },
     {
       "source": "/kurs/gbp",
-      "destination": "/kurs-funta/",
+      "destination": "/kurs-funta",
       "permanent": true
     },
     {
       "source": "/kurs/chf",
-      "destination": "/kurs-franka/",
+      "destination": "/kurs-franka",
       "permanent": true
     },
     {
       "source": "/kurs/czk",
-      "destination": "/kurs-korony-czeskiej/",
+      "destination": "/kurs-korony-czeskiej",
       "permanent": true
     },
     {
       "source": "/kurs/nok",
-      "destination": "/kurs-korony-norweskiej/",
+      "destination": "/kurs-korony-norweskiej",
       "permanent": true
     },
     {
       "source": "/kurs/sek",
-      "destination": "/kurs-korony-szwedzkiej/",
+      "destination": "/kurs-korony-szwedzkiej",
       "permanent": true
     },
     {
       "source": "/kurs/dkk",
-      "destination": "/kurs-korony-dunskiej/",
+      "destination": "/kurs-korony-dunskiej",
       "permanent": true
     },
     {
       "source": "/kurs/isk",
-      "destination": "/kurs-korony-islandzkiej/",
+      "destination": "/kurs-korony-islandzkiej",
       "permanent": true
     },
     {
       "source": "/kurs/jpy",
-      "destination": "/kurs-jena/",
+      "destination": "/kurs-jena",
       "permanent": true
     },
     {
       "source": "/kurs/cad",
-      "destination": "/kurs-dolara-kanadyjskiego/",
+      "destination": "/kurs-dolara-kanadyjskiego",
       "permanent": true
     },
     {
       "source": "/kurs/aud",
-      "destination": "/kurs-dolara-australijskiego/",
+      "destination": "/kurs-dolara-australijskiego",
       "permanent": true
     },
     {
       "source": "/kurs/nzd",
-      "destination": "/kurs-dolara-nowozelandzkiego/",
+      "destination": "/kurs-dolara-nowozelandzkiego",
       "permanent": true
     },
     {
       "source": "/kurs/sgd",
-      "destination": "/kurs-dolara-singapurskiego/",
+      "destination": "/kurs-dolara-singapurskiego",
       "permanent": true
     },
     {
       "source": "/kurs/hkd",
-      "destination": "/kurs-dolara-hongkongu/",
+      "destination": "/kurs-dolara-hongkongu",
       "permanent": true
     },
     {
       "source": "/kurs/huf",
-      "destination": "/kurs-forinta/",
+      "destination": "/kurs-forinta",
       "permanent": true
     },
     {
       "source": "/kurs/uah",
-      "destination": "/kurs-hrywny/",
+      "destination": "/kurs-hrywny",
       "permanent": true
     },
     {
       "source": "/kurs/try",
-      "destination": "/kurs-liry/",
+      "destination": "/kurs-liry",
       "permanent": true
     },
     {
       "source": "/kurs/ron",
-      "destination": "/kurs-leja/",
+      "destination": "/kurs-leja",
       "permanent": true
     },
     {
       "source": "/kurs/ils",
-      "destination": "/kurs-szekla/",
+      "destination": "/kurs-szekla",
       "permanent": true
     },
     {
       "source": "/kurs/clp",
-      "destination": "/kurs-peso-chilijskiego/",
+      "destination": "/kurs-peso-chilijskiego",
       "permanent": true
     },
     {
       "source": "/kurs/php",
-      "destination": "/kurs-peso-filipinskiego/",
+      "destination": "/kurs-peso-filipinskiego",
       "permanent": true
     },
     {
       "source": "/kurs/mxn",
-      "destination": "/kurs-peso-meksykanskiego/",
+      "destination": "/kurs-peso-meksykanskiego",
       "permanent": true
     },
     {
       "source": "/kurs/zar",
-      "destination": "/kurs-randa/",
+      "destination": "/kurs-randa",
       "permanent": true
     },
     {
       "source": "/kurs/brl",
-      "destination": "/kurs-reala/",
+      "destination": "/kurs-reala",
       "permanent": true
     },
     {
       "source": "/kurs/myr",
-      "destination": "/kurs-ringgita/",
+      "destination": "/kurs-ringgita",
       "permanent": true
     },
     {
       "source": "/kurs/idr",
-      "destination": "/kurs-rupii-indonezyjskiej/",
+      "destination": "/kurs-rupii-indonezyjskiej",
       "permanent": true
     },
     {
       "source": "/kurs/inr",
-      "destination": "/kurs-rupii-indyjskiej/",
+      "destination": "/kurs-rupii-indyjskiej",
       "permanent": true
     },
     {
       "source": "/kurs/krw",
-      "destination": "/kurs-wona/",
+      "destination": "/kurs-wona",
       "permanent": true
     },
     {
       "source": "/kurs/cny",
-      "destination": "/kurs-yuana/",
+      "destination": "/kurs-yuana",
       "permanent": true
     },
     {
       "source": "/kurs/thb",
-      "destination": "/kurs-bata/",
+      "destination": "/kurs-bata",
       "permanent": true
     },
     {
       "source": "/kurs/xdr",
-      "destination": "/kurs-sdr/",
+      "destination": "/kurs-sdr",
       "permanent": true
     },
     {
       "source": "/kurs",
-      "destination": "/kursy-walut/",
+      "destination": "/kursy-walut",
       "permanent": true
     }
   ]

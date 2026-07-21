@@ -138,7 +138,7 @@ def build_page(code, rate, series, table_meta):
                 "price": round(mid, 4),
                 "priceCurrency": "PLN",
             },
-            "url": f"https://currencypilot.io/{slug}/",
+            "url": f"https://currencypilot.io/{slug}",
         },
         ensure_ascii=False,
     )
@@ -171,7 +171,7 @@ PAGE = """<!DOCTYPE html>
 <title>Kurs {gen} ({code}) — {mid} zł · CurrencyPilot</title>
 <meta name="description" content="Kurs {gen} ({code}) z dnia {effective}: 1 {code} = {mid} zł. Kurs średni NBP, tabela {table_no}, historia notowań i przelicznik.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="canonical" href="https://currencypilot.io/{slug}/">
+<link rel="canonical" href="https://currencypilot.io/{slug}">
 <script type="application/ld+json">{structured}</script>
 <style>
   :root {{ color-scheme: light dark; --brand:#0a6fe8; --fill:rgba(10,111,232,.12);
@@ -212,7 +212,7 @@ PAGE = """<!DOCTYPE html>
 </head>
 <body>
 
-<p class="back"><a href="/">← CurrencyPilot</a> · <a href="/kursy-walut/">wszystkie waluty</a></p>
+<p class="back"><a href="/">← CurrencyPilot</a> · <a href="/kursy-walut">wszystkie waluty</a></p>
 
 <h1>Kurs {gen} ({code})</h1>
 
@@ -292,7 +292,7 @@ INDEX = """<!DOCTYPE html>
 <title>Kursy walut NBP — tabela z {effective} · CurrencyPilot</title>
 <meta name="description" content="Kursy średnie NBP z {effective}, tabela {table_no}. Wszystkie waluty tabeli A wraz z historią notowań.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="canonical" href="https://currencypilot.io/kursy-walut/">
+<link rel="canonical" href="https://currencypilot.io/kursy-walut">
 <style>
   :root {{ color-scheme: light dark; --brand:#0a6fe8; --ink:#0d1117;
            --soft:#4a5568; --bg:#fff; --tint:#f2f6fc; --line:#dfe6f0; }}
@@ -357,12 +357,12 @@ def write_redirects():
     config["redirects"] = [
         {
             "source": f"/kurs/{code.lower()}",
-            "destination": f"/{slug}/",
+            "destination": f"/{slug}",
             "permanent": True,
         }
         for code, (slug, _, _) in CURRENCIES.items()
     ] + [
-        {"source": "/kurs", "destination": "/kursy-walut/", "permanent": True},
+        {"source": "/kurs", "destination": "/kursy-walut", "permanent": True},
     ]
 
     config_path.write_text(
@@ -395,7 +395,7 @@ def main():
         written += 1
 
         index_rows.append(
-            (nominative, f'<tr><td><a href="/{slug}/">{html.escape(nominative)}</a>'
+            (nominative, f'<tr><td><a href="/{slug}">{html.escape(nominative)}</a>'
                          f' <span class="kod">{code}</span></td>'
                          f'<td>{pl_number(rate["mid"])} zł</td></tr>')
         )
