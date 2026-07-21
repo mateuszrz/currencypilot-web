@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CurrencyPilot — Konwerter walut z kursami NBP</title>
+<meta name="description" content="Przeliczaj waluty po kursach średnich NBP. Kalkulator, historia notowań i tryb offline. Bez reklam, kont i śledzenia.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://currencypilot.io/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://currencypilot.io/">
+<meta property="og:title" content="CurrencyPilot — Konwerter walut z kursami NBP">
+<meta property="og:description" content="Kursy średnie NBP, kalkulator i historia notowań. Bez reklam, kont i śledzenia.">
+<meta property="og:image" content="https://currencypilot.io/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    color-scheme: light dark;
+    --brand: #0a84ff;
+    --brand-deep: #053e9e;
+    --bg: #ffffff;
+    --bg-soft: #f4f7fb;
+    --text: #16181d;
+    --muted: #5b6472;
+    --line: #e2e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216;
+      --bg-soft: #171b21;
+      --text: #e6e8ec;
+      --muted: #a2abb8;
+      --line: #262c35;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font: 1rem/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  a { color: var(--brand); }
+
+  /* ---------- nagłówek ---------- */
+
+  header { padding: 1.5rem 0; }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -.01em;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .brand svg { display: block; }
+
+  /* ---------- hero ---------- */
+
+  .hero {
+    background: linear-gradient(135deg, #1a91ff 0%, var(--brand-deep) 100%);
+    color: #fff;
+    border-radius: 1.25rem;
+    padding: 3.5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Rozświetlenie w rogu — ten sam zabieg co na grafice promocyjnej w Play. */
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: -40% 55% 30% -25%;
+    background: radial-gradient(circle, rgba(255,255,255,.16), transparent 70%);
+    pointer-events: none;
+  }
+  .hero > * { position: relative; }
+
+  .hero h1 {
+    margin: 0 0 .75rem;
+    font-size: clamp(1.9rem, 5vw, 3rem);
+    line-height: 1.15;
+    letter-spacing: -.02em;
+  }
+  .hero p {
+    margin: 0 auto;
+    max-width: 34rem;
+    font-size: clamp(1rem, 2.2vw, 1.15rem);
+    color: #dbeafe;
+  }
+
+  .badge {
+    display: inline-block;
+    margin-top: 1.75rem;
+    padding: .55rem 1.1rem;
+    border: 1px solid rgba(255,255,255,.45);
+    border-radius: 999px;
+    font-size: .9rem;
+    color: #fff;
+  }
+
+  /* ---------- sekcje ---------- */
+
+  section { padding: 3.5rem 0; }
+  h2 {
+    font-size: 1.5rem;
+    letter-spacing: -.01em;
+    margin: 0 0 1.5rem;
+  }
+
+  .features {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  }
+  .card {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: .9rem;
+    padding: 1.4rem;
+  }
+  .card h3 { margin: 0 0 .4rem; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+  .privacy {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    padding: 2rem;
+  }
+  .privacy ul { margin: 0; padding-left: 1.15rem; }
+  .privacy li { margin: .4rem 0; }
+
+  /* ---------- stopka ---------- */
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 2rem 0 3rem;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+  footer nav { margin-bottom: .75rem; display: flex; gap: 1.25rem; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <a class="brand" href="/">
+      <svg width="30" height="30" viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="11" fill="#0a84ff"/>
+        <g stroke="#fff" stroke-width="3.4" stroke-linecap="round" fill="none">
+          <path d="M14 19h17"/>
+          <path d="M34 19l-5.5-4.6M34 19l-5.5 4.6"/>
+          <path d="M34 29H17"/>
+          <path d="M14 29l5.5-4.6M14 29l5.5 4.6"/>
+        </g>
+      </svg>
+      CurrencyPilot
+    </a>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Konwerter walut<br>z kursami NBP</h1>
+      <p>
+        Przeliczaj waluty po oficjalnych kursach średnich Narodowego Banku
+        Polskiego. Z kalkulatorem, historią notowań i trybem offline.
+      </p>
+      <span class="badge">Aplikacja na Androida — wkrótce w Google Play</span>
+    </div>
+
+    <section>
+      <h2>Co potrafi</h2>
+      <div class="features">
+        <div class="card">
+          <h3>Przeliczanie z kalkulatorem</h3>
+          <p>
+            Wpisz „55 + 35", a przeliczenie zaktualizuje się samo. Nie musisz
+            przełączać się do kalkulatora i z powrotem.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Ponad 30 walut</h3>
+          <p>
+            Wszystkie waluty z tabeli A NBP. Znajdziesz je po kodzie albo po
+            polskiej nazwie.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Historia kursów</h3>
+          <p>
+            Wykres za miesiąc, kwartał albo rok. Przeciągnij palcem, żeby
+            zobaczyć kurs z konkretnego dnia.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Działa bez internetu</h3>
+          <p>
+            Ostatnio pobrane kursy i wykresy zapisują się na urządzeniu. Gdy
+            dane są starsze niż dzisiejsze, mówimy o tym wprost.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Prywatność</h2>
+      <div class="privacy">
+        <p style="margin-top:0">
+          Aplikacja nie zbiera żadnych danych o użytkowniku. To nie jest
+          deklaracja marketingowa — wynika wprost z tego, jak jest zbudowana:
+        </p>
+        <ul>
+          <li>jedno uprawnienie systemowe: dostęp do internetu,</li>
+          <li>jedno połączenie sieciowe: <strong>api.nbp.pl</strong> po HTTPS,</li>
+          <li>brak kont, logowania i reklam,</li>
+          <li>brak narzędzi analitycznych i śledzących,</li>
+          <li>kursy zapisane na urządzeniu nigdy go nie opuszczają.</li>
+        </ul>
+        <p style="margin-bottom:0">
+          Szczegóły w <a href="/privacy">polityce prywatności</a>.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Skąd pochodzą kursy</h2>
+      <p style="color:var(--muted); max-width:44rem">
+        Z publicznego API Narodowego Banku Polskiego — tabela A, kursy średnie
+        walut obcych. NBP publikuje ją w dni robocze około 12:15; w weekendy
+        i święta aplikacja pokazuje ostatnią opublikowaną tabelę i oznacza jej
+        datę. CurrencyPilot nie jest powiązany z NBP ani przez NBP wspierany.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <nav>
+      <a href="/privacy">Polityka prywatności</a>
+      <a href="mailto:mateusz.rzetecki@gmail.com">Kontakt</a>
+    </nav>
+    <p style="margin:0">
+      CurrencyPilot · aplikacja informacyjna, nie świadczy usług wymiany walut
+      ani doradztwa finansowego.
+    </p>
+  </footer>
+
+</div>
+
+</body>
+</html>
