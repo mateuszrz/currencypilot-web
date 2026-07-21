@@ -343,6 +343,44 @@ INDEX = """<!DOCTYPE html>
 """
 
 
+def write_sitemap(slugs, effective):
+    """Mapa strony — generowana, zeby nie zapomniec o nowej walucie.
+
+    `lastmod` stron kursow to data notowania, nie data buildu: strona zmienia
+    sie razem z tabela NBP, a nie za kazdym przebiegiem workflow.
+    """
+    static = []
+    for path, filename in [("", "index.html"), ("privacy", "privacy/index.html")]:
+        file = ROOT / filename
+        if file.exists():
+            modified = date.fromtimestamp(file.stat().st_mtime).isoformat()
+            static.append((f"https://currencypilot.io/{path}", modified, "0.9"))
+
+    entries = static + [
+        ("https://currencypilot.io/kursy-walut", effective, "0.8")
+    ] + [
+        (f"https://currencypilot.io/{slug}", effective, "0.7") for slug in slugs
+    ]
+
+    body = "\n".join(
+        f"  <url>\n"
+        f"    <loc>{loc}</loc>\n"
+        f"    <lastmod>{lastmod}</lastmod>\n"
+        f"    <priority>{priority}</priority>\n"
+        f"  </url>"
+        for loc, lastmod, priority in entries
+    )
+
+    (ROOT / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{body}\n"
+        "</urlset>\n",
+        encoding="utf-8",
+    )
+    return len(entries)
+
+
 def write_redirects():
     """Stare adresy /kurs/<kod> kieruja na nowe, frazowe.
 
@@ -410,10 +448,15 @@ def main():
     (directory / "index.html").write_text(index, encoding="utf-8")
 
     redirects = write_redirects()
+    urls = write_sitemap(
+        [CURRENCIES[code][0] for code in CURRENCIES if code in rates],
+        meta["effectiveDate"],
+    )
 
     print(f"  tabela {meta['no']} z {pl_date(meta['effectiveDate'])}")
     print(f"  wygenerowano {written} stron walut + spis /kursy-walut")
     print(f"  przekierowan ze starych adresow: {redirects}")
+    print(f"  adresow w sitemap.xml: {urls}")
 
 
 if __name__ == "__main__":
