@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.currencypilot.app",
+      "sha256_cert_fingerprints": [
+        "E5:D5:72:41:EF:DF:F3:C1:98:49:BF:06:E1:33:76:CE:76:CE:0D:BC:C0:1B:8E:19:FB:47:CF:01:2A:AE:80:9C"
+      ]
+    }
+  }
+]
