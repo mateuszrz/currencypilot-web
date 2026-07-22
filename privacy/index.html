@@ -38,13 +38,12 @@
 
 <h1>Polityka prywatności</h1>
 <p class="meta">Aplikacja <strong>Konwerter walut</strong> ·
-obowiązuje od 20 lipca 2026 · wersja 1.0</p>
+obowiązuje od 22 lipca 2026 · wersja 1.1</p>
 
 <p>
   Krótko: aplikacja nie zbiera żadnych danych o użytkowniku. Nie ma kont,
   logowania, reklam ani narzędzi analitycznych. Poniżej opisujemy to
-  szczegółowo, łącznie z jedynym połączeniem sieciowym, które aplikacja
-  wykonuje.
+  szczegółowo, łącznie z połączeniami sieciowymi, które aplikacja wykonuje.
 </p>
 
 <h2>Jakie dane zbieramy</h2>
@@ -66,17 +65,19 @@ obowiązuje od 20 lipca 2026 · wersja 1.0</p>
 
 <h2>Połączenia sieciowe</h2>
 <p>
-  Aplikacja łączy się z jednym serwerem: <strong>api.nbp.pl</strong> —
-  publicznym API Narodowego Banku Polskiego, skąd pobiera tabelę kursów
-  średnich oraz historię notowań. Połączenie jest szyfrowane (HTTPS).
+  Aplikacja łączy się z publicznymi API banków centralnych, zależnie od
+  wybranego w ustawieniach źródła kursów: <strong>api.nbp.pl</strong>
+  (Narodowy Bank Polski) oraz <strong>ecb.europa.eu</strong> (Europejski
+  Bank Centralny). Stamtąd pobiera tabelę kursów i historię notowań.
+  Połączenia są szyfrowane (HTTPS).
 </p>
 <p>
   Zapytanie nie zawiera żadnych informacji o użytkowniku — nie wysyłamy
   identyfikatorów ani danych o urządzeniu. Jak przy każdym połączeniu
-  internetowym, serwer NBP widzi adres IP, z którego przyszło zapytanie;
-  nie mamy na to wpływu i nie mamy dostępu do logów NBP. Zasady
-  przetwarzania danych po stronie NBP opisuje
-  <a href="https://nbp.pl/">nbp.pl</a>.
+  internetowym, serwer banku widzi adres IP, z którego przyszło zapytanie;
+  nie mamy na to wpływu i nie mamy dostępu do jego logów. Zasady
+  przetwarzania danych opisują <a href="https://nbp.pl/">nbp.pl</a> oraz
+  <a href="https://www.ecb.europa.eu/">ecb.europa.eu</a>.
 </p>
 
 <h2>Dane zapisywane na urządzeniu</h2>
@@ -94,7 +95,8 @@ obowiązuje od 20 lipca 2026 · wersja 1.0</p>
 
 <h2>Odnośniki zewnętrzne</h2>
 <p>
-  Ekran „O aplikacji” zawiera odnośnik do strony api.nbp.pl. Otwiera się on
+  Ekran „O aplikacji” zawiera odnośnik do źródła kursów — strony api.nbp.pl
+  albo ecb.europa.eu, zależnie od wybranego źródła. Otwiera się on
   w przeglądarce i od tego momentu obowiązuje polityka prywatności
   odwiedzanej witryny.
 </p>
