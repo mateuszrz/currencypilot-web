@@ -11,8 +11,8 @@ different reasons than code.
 
 # ISO code -> (url slug, English name, country/area)
 CURRENCIES_EN = {
-    "USD": ("us-dollar-to-euro", "US dollar", "United States"),
-    "GBP": ("pound-to-euro", "pound sterling", "United Kingdom"),
+    "USD": ("us-dollar-to-euro", "US dollar", "the United States"),
+    "GBP": ("pound-to-euro", "pound sterling", "the United Kingdom"),
     "CHF": ("swiss-franc-to-euro", "Swiss franc", "Switzerland and Liechtenstein"),
     "JPY": ("japanese-yen-to-euro", "Japanese yen", "Japan"),
     "PLN": ("polish-zloty-to-euro", "Polish zloty", "Poland"),
