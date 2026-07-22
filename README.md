@@ -86,10 +86,16 @@ Output Directory puste — pliki idą na serwer takie, jakie są.
 
 ## Skąd bierze się polityka prywatności
 
-Źródłem jest `store/privacy/index.html` w prywatnym repo aplikacji
-(`currencyconverterplus`). Po zmianie tam trzeba skopiować plik tutaj —
-adres `/privacy` jest wpisany w Google Play Console, więc treść musi się
-zgadzać z tym, co robi opublikowana wersja aplikacji.
+Źródłem treści jest `store/privacy/index.html` w prywatnym repo aplikacji
+(`currencyconverterplus`). Adres `/privacy` jest wpisany w Google Play Console,
+więc treść musi się zgadzać z tym, co robi opublikowana wersja aplikacji.
+
+**Nie kopiuj pliku 1:1.** Tutejsza wersja ma dodatkowy „chrome" strony,
+którego źródło nie ma: inny `<title>` (CurrencyPilot, nie „Konwerter walut"),
+`<link rel="canonical">`, favicon i link powrotny `← CurrencyPilot`. Nadpisanie
+pliku źródłem skasowałoby te elementy. Przy zmianie polityki **nanieś te same
+zmiany treści na oba pliki** (sekcje merytoryczne są identyczne), zostawiając
+tutejszy chrome nietknięty. Pamiętaj też podbić numer wersji i datę w obu.
 
 ## Uwaga o treści
 
