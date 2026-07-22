@@ -212,7 +212,7 @@ PAGE = """<!DOCTYPE html>
 </head>
 <body>
 
-<p class="back"><a href="/">← CurrencyPilot</a> · <a href="/kursy-walut">wszystkie waluty</a></p>
+<p class="back"><a href="/">← CurrencyPilot</a> · <a href="/kursy-walut">wszystkie waluty</a> · <a href="/en/">English</a></p>
 
 <h1>Kurs {gen} ({code})</h1>
 
@@ -321,7 +321,7 @@ INDEX = """<!DOCTYPE html>
 </head>
 <body>
 
-<p class="back"><a href="/">← CurrencyPilot</a></p>
+<p class="back"><a href="/">← CurrencyPilot</a> · <a href="/en/">English</a></p>
 
 <h1>Kursy walut NBP</h1>
 <p class="meta">Tabela {table_no} · {effective} · kursy średnie</p>

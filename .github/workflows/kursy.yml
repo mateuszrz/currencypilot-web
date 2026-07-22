@@ -1,14 +1,17 @@
 name: Odswiez kursy
 
-# NBP publikuje tabele A w dni robocze okolo 12:15 czasu polskiego.
-# Cron chodzi w UTC, a Polska zmienia czas dwa razy w roku, wiec zamiast
-# kombinowac z przesunieciem uruchamiamy sie dwa razy: 11:00 i 13:00 UTC.
-# To pokrywa 12:15 zarowno zima (CET), jak i latem (CEST). Drugi przebieg
-# nic nie zepsuje — gdy tabela sie nie zmienila, nie ma czego commitowac.
+# Dwa zrodla, dwie pory publikacji:
+#   NBP  tabela A  ~12:15 czasu polskiego  -> przebiegi 11:00 i 13:00 UTC
+#   EBC  kursy ref. ~16:00 CET             -> przebiegi 14:30 i 15:30 UTC
+# Cron chodzi w UTC, a Polska zmienia czas dwa razy w roku, wiec kazde zrodlo
+# lapiemy dwa razy (zima CET / lato CEST). Za kazdym przebiegiem odswiezamy
+# oba zrodla — gdy dane sie nie zmienily, nie ma czego commitowac.
 on:
   schedule:
     - cron: "0 11 * * 1-5"
     - cron: "0 13 * * 1-5"
+    - cron: "30 14 * * 1-5"
+    - cron: "30 15 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -28,8 +31,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Wygeneruj strony kursow
+      - name: Wygeneruj polskie strony kursow (NBP)
         run: python tools/generate_currency_pages.py
+
+      # Po polskim, bo scala swoje adresy do sitemap.xml zapisanego wyzej.
+      - name: Wygeneruj angielskie strony kursow (EBC)
+        run: python tools/generate_en_pages.py
 
       - name: Zacommituj, jesli kursy sie zmienily
         run: |
