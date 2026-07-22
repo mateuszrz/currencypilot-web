@@ -14,9 +14,10 @@ Requires: access to www.ecb.europa.eu
 
 import html
 import json
+import math
 import re
 import xml.etree.ElementTree as ET
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from urllib.request import urlopen
 
@@ -54,6 +55,18 @@ def fetch_days(url):
 
 def en_number(value, places=4):
     """English format: comma thousands, dot decimal — Python's default."""
+    return f"{value:,.{places}f}"
+
+
+def eur_str(value):
+    """Euro value with enough decimals for ~4 significant figures (min 4).
+
+    Without this, tiny currencies like the rupiah (~0.00005 EUR) round to
+    0.0000 and the whole page reads as broken.
+    """
+    if value <= 0:
+        return "0"
+    places = max(4, 3 - math.floor(math.log10(value)))
     return f"{value:,.{places}f}"
 
 
@@ -105,12 +118,12 @@ def build_currency_page(code, per_eur, series_eur, effective):
             change_html = (
                 f"<p>Over the last {len(series_eur)} quotes the {name} has "
                 f"{direction} <strong>{en_number(abs(pct), 2)}%</strong> "
-                f"against the euro — from {en_number(first)} to "
-                f"{en_number(mid)} EUR.</p>"
+                f"against the euro — from {eur_str(first)} to "
+                f"{eur_str(mid)} EUR.</p>"
             )
 
     rows = "\n".join(
-        f"<tr><td>{en_date(day)}</td><td>{en_number(value)} EUR</td></tr>"
+        f"<tr><td>{en_date(day)}</td><td>{eur_str(value)} EUR</td></tr>"
         for day, value in reversed(series_eur[-TABLE_ROWS:])
     )
 
@@ -127,7 +140,7 @@ def build_currency_page(code, per_eur, series_eur, effective):
             "currency": code,
             "currentExchangeRate": {
                 "@type": "UnitPriceSpecification",
-                "price": round(mid, 4),
+                "price": round(mid, 8),
                 "priceCurrency": "EUR",
             },
             "url": f"https://currencypilot.io/en/{slug}",
@@ -142,7 +155,7 @@ def build_currency_page(code, per_eur, series_eur, effective):
         name_title=html.escape(name[:1].upper() + name[1:]),
         country=html.escape(country),
         note_block=f"<p>{html.escape(note)}</p>" if note else "",
-        mid=en_number(mid),
+        mid=eur_str(mid),
         effective=en_date(effective),
         change=change_html,
         rows=rows,
@@ -404,7 +417,7 @@ def main():
         index_rows.append(
             (name, f'<tr><td><a href="/en/{slug}">{html.escape(name)}</a>'
                    f' <span class="code">{code}</span></td>'
-                   f'<td>{en_number(1 / per_eur)} EUR</td></tr>')
+                   f'<td>{eur_str(1 / per_eur)} EUR</td></tr>')
         )
 
     hub_rows = "\n".join(
