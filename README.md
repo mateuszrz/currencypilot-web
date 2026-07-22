@@ -38,6 +38,23 @@ w repozytorium aplikacji** — inaczej linki z aplikacji trafią w pustkę.
 Przekierowania ze starych adresów `/kurs/<kod>` generują się do
 `vercel.json` z tego samego słownika.
 
+## Strony po angielsku (`/en/`)
+
+`python tools/generate_en_pages.py` buduje angielski odpowiednik na danych
+**EBC** (baza EUR) — spójnie z aplikacją, która dla języka angielskiego też
+sięga po EBC. Strony to `/en/<waluta>-to-euro/` („1 X = Y EUR"), a `/en/`
+jest hubem euro („1 EUR = Y X") i spisem. Słowniki w `tools/currencies_en.py`.
+
+Źródłem jest oficjalny `eurofxref-daily.xml` (bieżący kurs) i
+`eurofxref-hist-90d.xml` (historia). EBC publikuje ~16:00 CET, więc workflow
+odświeża angielskie strony w osobnych porach (14:30 i 15:30 UTC) niż polskie.
+Generator EN uruchamia się **po** polskim, bo dokłada swoje adresy do
+`sitemap.xml` zapisanego przez tamten.
+
+Polskie i angielskie strony **nie są tłumaczeniami** — mają inną walutę bazową
+(PLN vs EUR), więc nie łączymy ich znacznikiem `hreflang`. Krzyżowe linki
+językowe (PL↔EN) są tylko widoczne, w nagłówkach.
+
 ## App Links
 
 Aplikacja przechwytuje adresy stron kursów i otwiera na nich ekran waluty.
