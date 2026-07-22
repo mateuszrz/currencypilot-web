@@ -42,8 +42,15 @@ Przekierowania ze starych adresów `/kurs/<kod>` generują się do
 
 `python tools/generate_en_pages.py` buduje angielski odpowiednik na danych
 **EBC** (baza EUR) — spójnie z aplikacją, która dla języka angielskiego też
-sięga po EBC. Strony to `/en/<waluta>-to-euro/` („1 X = Y EUR"), a `/en/`
-jest hubem euro („1 EUR = Y X") i spisem. Słowniki w `tools/currencies_en.py`.
+sięga po EBC. Strony kursów to `/en/<waluta>-to-euro/` („1 X = Y EUR"), a hub
+euro („1 EUR = Y X") i spis walut jest pod `/en/exchange-rates/`. Słowniki
+w `tools/currencies_en.py`.
+
+`/en/index.html` to **angielska strona główna** (landing ze zrzutami i opisem
+aplikacji) — ręcznie utrzymywana, lustro polskiej `index.html`, generator jej
+nie dotyka. **Uwaga:** zrzuty w `/shots/` są na razie z polskiego UI; do
+podmiany na angielskie (aplikacja jest dwujęzyczna, wystarczy przełączyć język
+i zrobić zrzuty na nowo).
 
 Źródłem jest oficjalny `eurofxref-daily.xml` (bieżący kurs) i
 `eurofxref-hist-90d.xml` (historia). EBC publikuje ~16:00 CET, więc workflow

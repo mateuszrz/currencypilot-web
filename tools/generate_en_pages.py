@@ -227,7 +227,7 @@ PAGE_EN = """<!DOCTYPE html>
 </head>
 <body>
 
-<p class="back"><a href="/en/">← CurrencyPilot</a> · <a href="/en/">all currencies</a> · <a href="/">Polski</a></p>
+<p class="back"><a href="/en/">← CurrencyPilot</a> · <a href="/en/exchange-rates/">all currencies</a> · <a href="/">Polski</a></p>
 
 <h1>{name_title} to euro ({code})</h1>
 
@@ -305,7 +305,7 @@ INDEX_EN = """<!DOCTYPE html>
 <title>Euro exchange rate — ECB rates from {effective} · CurrencyPilot</title>
 <meta name="description" content="Euro reference rates from the ECB, {effective}. 1 EUR to USD, GBP, CHF and more, each with history and a converter.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="canonical" href="https://currencypilot.io/en/">
+<link rel="canonical" href="https://currencypilot.io/en/exchange-rates/">
 <style>
   :root {{ color-scheme: light dark; --brand:#0a6fe8; --ink:#0d1117;
            --soft:#4a5568; --bg:#fff; --tint:#f2f6fc; --line:#dfe6f0; }}
@@ -383,7 +383,10 @@ def merge_sitemap(slugs, effective):
         text,
     )
 
-    entries = [("https://currencypilot.io/en/", "0.8")] + [
+    entries = [
+        ("https://currencypilot.io/en/", "0.9"),
+        ("https://currencypilot.io/en/exchange-rates/", "0.8"),
+    ] + [
         (f"https://currencypilot.io/en/{slug}", "0.7") for slug in slugs
     ]
     body = "".join(
@@ -446,8 +449,9 @@ def main():
         hub_rows=hub_rows,
         rows="\n".join(row for _, row in sorted(index_rows)),
     )
-    (ROOT / "en").mkdir(parents=True, exist_ok=True)
-    (ROOT / "en" / "index.html").write_text(index, encoding="utf-8")
+    directory = ROOT / "en" / "exchange-rates"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "index.html").write_text(index, encoding="utf-8")
 
     slugs = [CURRENCIES_EN[c][0] for c in CURRENCIES_EN if c in rates]
     urls = merge_sitemap(slugs, effective)
