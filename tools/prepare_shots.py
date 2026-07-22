@@ -6,8 +6,11 @@ wygladaja jak smiec i zdradzaja prywatne dane wlasciciela telefonu,
 wiec je odcinamy. Wynik zapisujemy w WebP, bo strona ma sie ladowac
 szybko, a to te same piksele przy ~5x mniejszym pliku.
 
-Uruchomienie:  python tools/prepare_shots.py <katalog-z-surowymi-zrzutami>
+Uruchomienie:  python tools/prepare_shots.py <katalog-z-surowymi-zrzutami> [katalog-wyjsciowy]
 Wymaga:        Pillow
+
+Domyslnie zapisuje do /shots/ (polski landing). Drugi argument pozwala celowac
+gdzie indziej, np. /en/shots/ dla angielskiego landingu.
 """
 
 import sys
@@ -25,7 +28,7 @@ BOTTOM_RATIO = 60 / 2424
 # na ekrany o podwojonej gestosci i zostawia zapas.
 TARGET_WIDTH = 720
 
-OUT = Path(__file__).resolve().parent.parent / "shots"
+DEFAULT_OUT = Path(__file__).resolve().parent.parent / "shots"
 
 
 def prepare(path):
@@ -40,18 +43,22 @@ def prepare(path):
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("Uzycie: python tools/prepare_shots.py <katalog>")
+    args = sys.argv[1:]
+    if not 1 <= len(args) <= 2:
+        raise SystemExit(
+            "Uzycie: python tools/prepare_shots.py <katalog> [katalog-wyjsciowy]"
+        )
 
-    source = Path(sys.argv[1])
+    source = Path(args[0])
+    out_dir = Path(args[1]) if len(args) == 2 else DEFAULT_OUT
     raws = sorted(source.glob("*.png"))
     if not raws:
         raise SystemExit(f"Brak plikow PNG w {source}")
 
-    OUT.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     for raw in raws:
-        out = OUT / f"{raw.stem}.webp"
+        out = out_dir / f"{raw.stem}.webp"
         prepared = prepare(raw)
         prepared.save(out, "WEBP", quality=85, method=6)
         kb = out.stat().st_size / 1024
