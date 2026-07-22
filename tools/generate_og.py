@@ -98,7 +98,7 @@ def main():
     tx = 336 * SS
     d.text((tx, 200 * SS), "Konwerter walut", font=font(_BOLD, 66 * SS),
            fill=WHITE, anchor="lm")
-    d.text((tx, 262 * SS), "Kursy średnie, kalkulator, historia",
+    d.text((tx, 262 * SS), "Oficjalne kursy, kalkulator, historia",
            font=font(_REG, 30 * SS), fill=WHITE, anchor="lm")
     d.text((tx, 314 * SS), "Bez reklam  ·  bez kont  ·  bez śledzenia",
            font=font(_REG, 24 * SS), fill=(214, 231, 252), anchor="lm")
