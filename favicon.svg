@@ -1,9 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
   <rect width="48" height="48" rx="11" fill="#0a84ff"/>
-  <g stroke="#fff" stroke-width="3.4" stroke-linecap="round" fill="none">
-    <path d="M14 19h17"/>
-    <path d="M34 19l-5.5-4.6M34 19l-5.5 4.6"/>
-    <path d="M34 29H17"/>
-    <path d="M14 29l5.5-4.6M14 29l5.5 4.6"/>
+  <rect x="12" y="8" width="24" height="32" rx="3.5" fill="#fff"/>
+  <rect x="14" y="10" width="20" height="7" rx="1" fill="#0a84ff"/>
+  <text x="24" y="13.9" font-family="Arial, Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">$</text>
+  <g fill="#0a84ff">
+    <rect x="14" y="19" width="5" height="4" rx="0.9"/>
+    <rect x="21.5" y="19" width="5" height="4" rx="0.9"/>
+    <rect x="29" y="19" width="5" height="4" rx="0.9"/>
+    <rect x="14" y="26.5" width="5" height="4" rx="0.9"/>
+    <rect x="21.5" y="26.5" width="5" height="4" rx="0.9"/>
+    <rect x="29" y="26.5" width="5" height="4" rx="0.9"/>
+    <rect x="14" y="34" width="5" height="4" rx="0.9"/>
+    <rect x="21.5" y="34" width="5" height="4" rx="0.9"/>
+    <rect x="29" y="34" width="5" height="4" rx="0.9"/>
   </g>
 </svg>
