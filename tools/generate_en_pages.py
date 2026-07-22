@@ -70,6 +70,19 @@ def eur_str(value):
     return f"{value:,.{places}f}"
 
 
+def conversion_amounts(mid):
+    """Amount ladder scaled to the currency.
+
+    For tiny currencies (1 IDR ≈ 0.00005 EUR) a ladder of 1..1000 units would
+    show 0.00 euro all the way down, so we scale it up by a power of ten until
+    even the smallest amount is worth something.
+    """
+    scale = 1
+    if 0 < mid < 0.01:
+        scale = 10 ** math.ceil(math.log10(0.01 / mid))
+    return [amount * scale for amount in AMOUNTS]
+
+
 def en_date(iso):
     return datetime.strptime(iso, "%Y-%m-%d").strftime("%d %b %Y")
 
@@ -130,7 +143,7 @@ def build_currency_page(code, per_eur, series_eur, effective):
     conversions = "\n".join(
         f"<tr><td>{en_number(amount, 0)} {code}</td>"
         f"<td>{en_number(amount * mid, 2)} EUR</td></tr>"
-        for amount in AMOUNTS
+        for amount in conversion_amounts(mid)
     )
 
     structured = json.dumps(
